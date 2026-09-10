@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import '../../core/constants/api_constants.dart';
 import '../../core/errors/failures.dart';
 import '../../core/network/dio_client.dart';
+import '../../core/utils/account_status.dart';
 import '../models/user_model.dart';
 import 'dio_helpers.dart';
 
@@ -16,6 +17,9 @@ class AuthRemoteDataSource {
     try {
       return await _doLogin(username, password);
     } on ServerFailure catch (e) {
+      // حساب بانتظار موافقة الإدارة أو مرفوض: لا داعي لمسح الجلسات وإعادة المحاولة.
+      if (isApprovalBlock(detectAccountStatus(message: e.message))) rethrow;
+
       final isSessionLimit = _isSessionLimitError(e.message, e.statusCode);
       if (isSessionLimit) {
         await _clearSessionsAndRetry(username, password);
@@ -98,6 +102,13 @@ class AuthRemoteDataSource {
   /// إلى رسالة عربية نظيفة ومفهومة للمستخدم بدل عرض وسوم HTML.
   String _humanizeLoginError(String code, String rawMsg) {
     final c = code.toLowerCase();
+
+    // ── موافقة الإدارة (إضافة Tutor User Approval) ─────────────────
+    // الحساب لم تُفعّله الإدارة بعد → نُرجع الرسالة الرسمية نفسها
+    // حتى تعرضها شاشة الدخول في نافذة توضيحية بدل خطأ أحمر عادي.
+    final approval = detectAccountStatus(code: code, message: rawMsg);
+    if (approval == AccountStatus.pending) return kPendingApprovalMessage;
+    if (approval == AccountStatus.disabled) return kDisabledAccountMessage;
     if (c.contains('incorrect_password')) {
       return 'كلمة المرور غير صحيحة';
     }

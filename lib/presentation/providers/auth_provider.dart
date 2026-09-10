@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/entities/user.dart';
 import '../../core/utils/secure_storage.dart';
 import '../../core/utils/cache_manager.dart';
+import '../../core/utils/account_status.dart';
 import 'bundles_provider.dart';
 import 'di_providers.dart';
 import 'profile_provider.dart';
@@ -17,6 +18,14 @@ class AuthUnauthenticated extends AuthState { const AuthUnauthenticated(); }
 class AuthError         extends AuthState {
   final String message;
   const AuthError(this.message);
+}
+
+/// الحساب موجود وبيانات الدخول صحيحة، لكن الإدارة لم تُفعّله بعد
+/// (أو رفضته) — مطابق لسلوك إضافة Tutor User Approval على المنصة.
+class AuthPendingApproval extends AuthState {
+  final String message;
+  final AccountStatus status;
+  const AuthPendingApproval(this.message, this.status);
 }
 
 class AuthNotifier extends StateNotifier<AuthState> {
@@ -49,8 +58,13 @@ class AuthNotifier extends StateNotifier<AuthState> {
     final result = await _ref.read(loginUseCaseProvider).call(username, password);
 
     result.fold(
-      (failure) => state = AuthError(failure.message),
-      (user)    => state = AuthAuthenticated(user),
+      (failure) {
+        final status = detectAccountStatus(message: failure.message);
+        state = isApprovalBlock(status)
+            ? AuthPendingApproval(failure.message, status)
+            : AuthError(failure.message);
+      },
+      (user) => state = AuthAuthenticated(user),
     );
   }
 

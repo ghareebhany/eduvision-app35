@@ -48,6 +48,7 @@ class ApiConstants {
 
   // Instructors list + instructor content (bundles + courses)
   static const String instructorsEndpoint = '/app/v1/instructors';
+  static const String accountStatusEndpoint = '/app/v1/account-status';
   static String instructorContentEndpoint(int id) =>
       '/app/v1/instructor/$id/content';
 

@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import 'package:dio/dio.dart';
 import '../../core/network/dio_client.dart';
 import '../../core/constants/api_constants.dart';
+import '../../core/utils/account_status.dart';
+import '../widgets/pending_approval_dialog.dart';
 
 // ══════════════════════════════════════════════════════════════════════════════
 //  شاشة إنشاء حساب جديد
@@ -134,13 +136,37 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         options: Options(extra: {'skipAuth': true}),
       );
 
-      final msg = response.data?['message'] as String? ?? 'تم إنشاء الحساب بنجاح';
+      final data = response.data is Map
+          ? Map<String, dynamic>.from(response.data as Map)
+          : <String, dynamic>{};
+      final msg = data['message'] as String? ?? 'تم إنشاء الحساب بنجاح';
+
+      // ── موافقة الإدارة على تفعيل العضوية ──────────────────────
+      // إذا كان الحساب بانتظار موافقة الإدارة، نعرض نفس رسالة
+      // المنصة في نافذة واضحة قبل العودة لشاشة الدخول.
+      final requiresApproval = data['requires_approval'] == true ||
+          isApprovalBlock(detectAccountStatus(
+            code: (data['account_status'] as String?) ?? '',
+            message: msg,
+          ));
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(msg), backgroundColor: Color(0xFF23AB96)),
-        );
-        context.go('/login');
+        if (requiresApproval) {
+          await showApprovalDialog(
+            context,
+            status: accountStatusFromString(
+              data['account_status'] as String? ?? 'pending',
+            ),
+            message: msg,
+            title: data['title'] as String?,
+          );
+          if (mounted) context.go('/login');
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(msg), backgroundColor: Color(0xFF23AB96)),
+          );
+          context.go('/login');
+        }
       }
     } on DioException catch (e) {
       final body = e.response?.data;

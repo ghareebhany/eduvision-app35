@@ -4,7 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/app_logo.dart';
+import '../../core/utils/account_status.dart';
 import '../providers/auth_provider.dart';
+import '../widgets/pending_approval_dialog.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -55,6 +57,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
 
     ref.listen<AuthState>(authProvider, (_, next) {
       if (next is AuthAuthenticated) context.go('/home');
+      // حساب بانتظار موافقة الإدارة (أو مرفوض) → نافذة توضيحية
+      // بنفس رسالة المنصة بدلاً من إشعار خطأ سريع.
+      if (next is AuthPendingApproval) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        showApprovalDialog(
+          context,
+          status: next.status,
+          message: next.message,
+        );
+      }
       if (next is AuthError) {
         ScaffoldMessenger.of(context)
           ..hideCurrentSnackBar()
@@ -379,7 +391,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                               fontSize: 14,
                               color: Colors.white.withValues(alpha: 0.45)),
                           children: [
-                            const TextSpan(text: 'ليس لديك حساب؟  '),
+                            const TextSpan(text: 'ل��س لديك حساب؟  '),
                             WidgetSpan(
                               child: GestureDetector(
                                 onTap: () => context.push('/register'),
