@@ -12,7 +12,7 @@ import '../../domain/entities/instructor.dart';
 import '../providers/instructors_provider.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  Instructors Screen — معلمو المنصة
+//  Instructors Screen — معلمو المنصة على شكل بطاقات (Grid)
 // ═══════════════════════════════════════════════════════════════════════════
 class InstructorsScreen extends ConsumerStatefulWidget {
   const InstructorsScreen({super.key});
@@ -34,11 +34,11 @@ class _InstructorsScreenState extends ConsumerState<InstructorsScreen> {
   List<Instructor> _apply(List<Instructor> all) {
     final tokens = searchTokens(_q);
     if (tokens.isEmpty) return all;
-    final r = all
-        .where((i) => matchesAllTokens(tokens, [i.name, i.bio]))
-        .toList();
-    r.sort((a, b) => relevanceScore(tokens: tokens, title: b.name, extra: [b.bio])
-        .compareTo(relevanceScore(tokens: tokens, title: a.name, extra: [a.bio])));
+    final r =
+        all.where((i) => matchesAllTokens(tokens, [i.name, i.bio])).toList();
+    r.sort((a, b) =>
+        relevanceScore(tokens: tokens, title: b.name, extra: [b.bio]).compareTo(
+            relevanceScore(tokens: tokens, title: a.name, extra: [a.bio])));
     return r;
   }
 
@@ -51,6 +51,13 @@ class _InstructorsScreenState extends ConsumerState<InstructorsScreen> {
     final ink    = AppPalette.textPrimary(context);
     final mut    = AppPalette.textSecondary(context);
     final line   = AppPalette.border(context);
+
+    const gridDelegate = SliverGridDelegateWithFixedCrossAxisCount(
+      crossAxisCount: 2,
+      mainAxisSpacing: 14,
+      crossAxisSpacing: 14,
+      childAspectRatio: 0.74,
+    );
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
@@ -116,23 +123,20 @@ class _InstructorsScreenState extends ConsumerState<InstructorsScreen> {
                 loading: () => [
                   SliverPadding(
                     padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
-                    sliver: SliverList.builder(
-                      itemCount: 6,
-                      itemBuilder: (_, __) => Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: Shimmer.fromColors(
+                    sliver: SliverGrid(
+                      gridDelegate: gridDelegate,
+                      delegate: SliverChildBuilderDelegate(
+                        (_, __) => Shimmer.fromColors(
                           baseColor: surf,
-                          highlightColor:
-                              Colors.white.withValues(alpha: 0.5),
+                          highlightColor: Colors.white.withValues(alpha: 0.5),
                           child: Container(
-                            height: 88,
                             decoration: BoxDecoration(
                               color: surf,
-                              borderRadius:
-                                  BorderRadius.circular(AppTheme.radiusLg),
+                              borderRadius: BorderRadius.circular(18),
                             ),
                           ),
                         ),
+                        childCount: 6,
                       ),
                     ),
                   ),
@@ -179,19 +183,20 @@ class _InstructorsScreenState extends ConsumerState<InstructorsScreen> {
                   return [
                     SliverPadding(
                       padding: const EdgeInsets.fromLTRB(16, 4, 16, 90),
-                      sliver: SliverList.builder(
-                        itemCount: filtered.length,
-                        itemBuilder: (_, i) => Padding(
-                          padding: const EdgeInsets.only(bottom: 12),
-                          child: _InstructorCard(
+                      sliver: SliverGrid(
+                        gridDelegate: gridDelegate,
+                        delegate: SliverChildBuilderDelegate(
+                          (_, i) => _InstructorCard(
                             instructor: filtered[i],
                             surf: surf,
                             ink: ink,
                             mut: mut,
                             line: line,
+                            isDark: isDark,
                             onTap: () =>
                                 context.push('/instructor/${filtered[i].id}'),
                           ),
+                          childCount: filtered.length,
                         ),
                       ),
                     ),
@@ -206,9 +211,11 @@ class _InstructorsScreenState extends ConsumerState<InstructorsScreen> {
   }
 }
 
-class _InstructorCard extends StatelessWidget {
+// ── بطاقة معلم ────────────────────────────────────────────────────
+class _InstructorCard extends StatefulWidget {
   final Instructor instructor;
   final Color surf, ink, mut, line;
+  final bool isDark;
   final VoidCallback onTap;
   const _InstructorCard({
     required this.instructor,
@@ -216,63 +223,109 @@ class _InstructorCard extends StatelessWidget {
     required this.ink,
     required this.mut,
     required this.line,
+    required this.isDark,
     required this.onTap,
   });
 
   @override
+  State<_InstructorCard> createState() => _InstructorCardState();
+}
+
+class _InstructorCardState extends State<_InstructorCard> {
+  bool _pressed = false;
+
+  @override
   Widget build(BuildContext context) {
-    final i = instructor;
-    return Material(
-      color: surf,
-      borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+    final i = widget.instructor;
+    final pad = widget.isDark ? AppTheme.mocha800 : AppTheme.mocha50;
+
+    return GestureDetector(
+      onTapDown: (_) => setState(() => _pressed = true),
+      onTapUp: (_) {
+        setState(() => _pressed = false);
+        widget.onTap();
+      },
+      onTapCancel: () => setState(() => _pressed = false),
+      child: AnimatedScale(
+        scale: _pressed ? 0.97 : 1.0,
+        duration: const Duration(milliseconds: 110),
+        curve: Curves.easeOutCubic,
         child: Container(
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-            border: Border.all(color: line),
+            color: widget.surf,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: widget.line),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black
+                    .withValues(alpha: widget.isDark ? 0.35 : 0.07),
+                blurRadius: 14,
+                offset: const Offset(0, 6),
+              ),
+            ],
           ),
-          padding: const EdgeInsets.all(12),
-          child: Row(
+          clipBehavior: Clip.antiAlias,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _Avatar(url: i.avatarUrl, name: i.name, size: 60),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(i.name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                            color: ink,
-                            fontWeight: FontWeight.w800,
-                            fontSize: 15)),
-                    if (i.bio.isNotEmpty) ...[
-                      const SizedBox(height: 4),
-                      Text(i.bio,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(color: mut, fontSize: 12)),
-                    ],
-                    const SizedBox(height: 8),
-                    Row(children: [
-                      Icon(Icons.collections_bookmark_outlined,
-                          size: 14, color: mut),
-                      const SizedBox(width: 4),
-                      Text('${i.bundleCount} باقة',
-                          style: TextStyle(color: mut, fontSize: 12)),
-                      const SizedBox(width: 12),
-                      Icon(Icons.play_lesson_outlined, size: 14, color: mut),
-                      const SizedBox(width: 4),
-                      Text('${i.courseCount} درس',
-                          style: TextStyle(color: mut, fontSize: 12)),
-                    ]),
-                  ],
+              // صورة المعلم كاملة دون قصّ
+              AspectRatio(
+                aspectRatio: 1,
+                child: Container(
+                  color: pad,
+                  child: i.avatarUrl.isEmpty
+                      ? _InitialFallback(name: i.name)
+                      : CachedNetworkImage(
+                          imageUrl: i.avatarUrl,
+                          fit: BoxFit.contain,
+                          placeholder: (_, __) =>
+                              _InitialFallback(name: i.name),
+                          errorWidget: (_, __, ___) =>
+                              _InitialFallback(name: i.name),
+                        ),
                 ),
               ),
-              Icon(Icons.chevron_left_rounded, color: mut),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(11, 9, 11, 10),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(i.name,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                              fontSize: 13.5,
+                              fontWeight: FontWeight.w800,
+                              color: widget.ink,
+                              height: 1.3)),
+                      const Spacer(),
+                      Row(children: [
+                        Icon(Icons.collections_bookmark_outlined,
+                            size: 12.5, color: AppTheme.coral500),
+                        const SizedBox(width: 3),
+                        Text('${i.bundleCount}',
+                            style: TextStyle(
+                                color: widget.mut,
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w600)),
+                        const SizedBox(width: 10),
+                        Icon(Icons.play_lesson_outlined,
+                            size: 12.5, color: AppTheme.coral500),
+                        const SizedBox(width: 3),
+                        Text('${i.courseCount}',
+                            style: TextStyle(
+                                color: widget.mut,
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w600)),
+                        const Spacer(),
+                        Icon(Icons.chevron_left_rounded,
+                            size: 18, color: widget.mut),
+                      ]),
+                    ],
+                  ),
+                ),
+              ),
             ],
           ),
         ),
@@ -281,39 +334,18 @@ class _InstructorCard extends StatelessWidget {
   }
 }
 
-class _Avatar extends StatelessWidget {
-  final String url;
+class _InitialFallback extends StatelessWidget {
   final String name;
-  final double size;
-  const _Avatar({required this.url, required this.name, this.size = 60});
+  const _InitialFallback({required this.name});
 
   @override
-  Widget build(BuildContext context) {
-    final fallback = Container(
-      width: size,
-      height: size,
-      alignment: Alignment.center,
-      color: AppTheme.mocha100,
-      child: Text(
-        name.isNotEmpty ? name.characters.first : '؟',
-        style: TextStyle(
-            color: AppTheme.mocha600,
-            fontWeight: FontWeight.w800,
-            fontSize: size * 0.38),
-      ),
-    );
-
-    return ClipOval(
-      child: url.isEmpty
-          ? fallback
-          : CachedNetworkImage(
-              imageUrl: url,
-              width: size,
-              height: size,
-              fit: BoxFit.cover,
-              placeholder: (_, __) => fallback,
-              errorWidget: (_, __, ___) => fallback,
-            ),
-    );
-  }
+  Widget build(BuildContext context) => Center(
+        child: Text(
+          name.isNotEmpty ? name.characters.first : '؟',
+          style: const TextStyle(
+              color: AppTheme.mocha600,
+              fontWeight: FontWeight.w800,
+              fontSize: 40),
+        ),
+      );
 }

@@ -47,10 +47,21 @@ class InstructorScreen extends ConsumerWidget {
             child: ListView(
               physics: const BouncingScrollPhysics(
                   parent: AlwaysScrollableScrollPhysics()),
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 90),
+              padding: const EdgeInsets.only(bottom: 90),
               children: [
-                _Header(instructor: i, surf: surf, ink: ink, mut: mut, line: line),
+                // صورة المعلم في الأعلى بعرض الصفحة الكامل ودون قصّ
+                _Header(
+                  instructor: i,
+                  ink: ink,
+                  mut: mut,
+                  isDark: AppPalette.isDark(context),
+                ),
                 const SizedBox(height: 20),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
 
                 // ── كتلة الباقات ─────────────────────────────────────
                 _SectionTitle(
@@ -109,6 +120,9 @@ class InstructorScreen extends ConsumerWidget {
                                 }),
                         ),
                       )),
+                    ],
+                  ),
+                ),
               ],
             ),
           );
@@ -121,71 +135,87 @@ class InstructorScreen extends ConsumerWidget {
 // ── Header ──────────────────────────────────────────────────────────
 class _Header extends StatelessWidget {
   final Instructor instructor;
-  final Color surf, ink, mut, line;
+  final Color ink, mut;
+  final bool isDark;
   const _Header({
     required this.instructor,
-    required this.surf,
     required this.ink,
     required this.mut,
-    required this.line,
+    required this.isDark,
   });
 
   @override
   Widget build(BuildContext context) {
     final i = instructor;
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: surf,
-        borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-        border: Border.all(color: line),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+    final pad = isDark ? AppTheme.mocha800 : AppTheme.mocha50;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // الصورة بعرض الشاشة بالكامل مع إظهارها كاملة (contain)
+        AspectRatio(
+          aspectRatio: 4 / 3,
+          child: Container(
+            width: double.infinity,
+            color: pad,
+            child: i.avatarUrl.isEmpty
+                ? _InitialBig(name: i.name)
+                : CachedNetworkImage(
+                    imageUrl: i.avatarUrl,
+                    fit: BoxFit.contain,
+                    width: double.infinity,
+                    placeholder: (_, __) => _InitialBig(name: i.name),
+                    errorWidget: (_, __, ___) => _InitialBig(name: i.name),
+                  ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _CircleAvatarImage(url: i.avatarUrl, name: i.name, size: 72),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(i.name,
-                        style: TextStyle(
-                            color: ink,
-                            fontSize: 18,
-                            fontWeight: FontWeight.w800)),
-                    const SizedBox(height: 8),
-                    Row(children: [
-                      _Stat(
-                          icon: Icons.collections_bookmark_outlined,
-                          label: '${i.bundleCount} باقة',
-                          mut: mut),
-                      const SizedBox(width: 14),
-                      _Stat(
-                          icon: Icons.play_lesson_outlined,
-                          label: '${i.courseCount} درس',
-                          mut: mut),
-                    ]),
-                  ],
-                ),
-              ),
+              Text(i.name,
+                  style: TextStyle(
+                      color: ink, fontSize: 20, fontWeight: FontWeight.w800)),
+              const SizedBox(height: 8),
+              Row(children: [
+                _Stat(
+                    icon: Icons.collections_bookmark_outlined,
+                    label: '${i.bundleCount} باقة',
+                    mut: mut),
+                const SizedBox(width: 14),
+                _Stat(
+                    icon: Icons.play_lesson_outlined,
+                    label: '${i.courseCount} درس',
+                    mut: mut),
+              ]),
+              if (i.bio.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Text(i.bio,
+                    style: TextStyle(color: mut, fontSize: 13.5, height: 1.7)),
+              ],
             ],
           ),
-          if (i.bio.isNotEmpty) ...[
-            const SizedBox(height: 14),
-            Text('نبذة عن المعلم',
-                style: TextStyle(
-                    color: ink, fontWeight: FontWeight.w700, fontSize: 14)),
-            const SizedBox(height: 6),
-            Text(i.bio,
-                style: TextStyle(color: mut, fontSize: 13.5, height: 1.7)),
-          ],
-        ],
-      ),
+        ),
+      ],
     );
   }
+}
+
+class _InitialBig extends StatelessWidget {
+  final String name;
+  const _InitialBig({required this.name});
+
+  @override
+  Widget build(BuildContext context) => Center(
+        child: Text(
+          name.isNotEmpty ? name.characters.first : '؟',
+          style: const TextStyle(
+              color: AppTheme.mocha600,
+              fontWeight: FontWeight.w800,
+              fontSize: 64),
+        ),
+      );
 }
 
 class _Stat extends StatelessWidget {
@@ -429,43 +459,6 @@ class _Thumb extends StatelessWidget {
                 errorWidget: (_, __, ___) => fallback,
               ),
       ),
-    );
-  }
-}
-
-class _CircleAvatarImage extends StatelessWidget {
-  final String url;
-  final String name;
-  final double size;
-  const _CircleAvatarImage(
-      {required this.url, required this.name, this.size = 72});
-
-  @override
-  Widget build(BuildContext context) {
-    final fallback = Container(
-      width: size,
-      height: size,
-      alignment: Alignment.center,
-      color: AppTheme.mocha100,
-      child: Text(
-        name.isNotEmpty ? name.characters.first : '؟',
-        style: TextStyle(
-            color: AppTheme.mocha600,
-            fontWeight: FontWeight.w800,
-            fontSize: size * 0.38),
-      ),
-    );
-    return ClipOval(
-      child: url.isEmpty
-          ? fallback
-          : CachedNetworkImage(
-              imageUrl: url,
-              width: size,
-              height: size,
-              fit: BoxFit.cover,
-              placeholder: (_, __) => fallback,
-              errorWidget: (_, __, ___) => fallback,
-            ),
     );
   }
 }
