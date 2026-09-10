@@ -248,19 +248,24 @@ class _LessonCard extends StatelessWidget {
           child: Row(
             children: [
               // الصورة كاملة دون قصّ (contain) فوق خلفية محايدة
+              // حواف منحنية خفيفة، وارتفاع يتبع نسبة الصورة (fitWidth):
+              // لا يحدث قصّ للصورة ولا تبقى فراغات حولها.
               ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Container(
-                  width: 116,
-                  height: 92,
-                  color: AppPalette.isDark(context)
-                      ? AppTheme.mocha800
-                      : AppTheme.mocha50,
-                  child: CachedNetworkImage(
-                    imageUrl: course.thumbnail,
-                    fit: BoxFit.contain,
-                    errorWidget: (_, __, ___) => const Icon(
-                        Icons.play_lesson_rounded,
+                borderRadius: BorderRadius.circular(14),
+                child: CachedNetworkImage(
+                  imageUrl: course.thumbnail,
+                  width: 122,
+                  fit: BoxFit.fitWidth,
+                  placeholder: (_, __) => Container(
+                    width: 122,
+                    height: 70,
+                    color: AppTheme.mocha100,
+                  ),
+                  errorWidget: (_, __, ___) => Container(
+                    width: 122,
+                    height: 70,
+                    color: AppTheme.mocha100,
+                    child: const Icon(Icons.play_lesson_rounded,
                         color: AppTheme.mocha500),
                   ),
                 ),

@@ -152,20 +152,33 @@ class _Header extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // الصورة بعرض الشاشة بالكامل مع إظهارها كاملة (contain)
-        AspectRatio(
-          aspectRatio: 4 / 3,
+        // بانر مستطيل بعرض الشاشة كاملاً مع حواف سفلية منحنية
+        ClipRRect(
+          borderRadius: const BorderRadius.vertical(
+            bottom: Radius.circular(28),
+          ),
+          // الارتفاع يتبع نسبة الصورة نفسها (fitWidth) لأن العرض كامل:
+          // فلا يحدث قصّ للصورة ولا تبقى فراغات حولها.
           child: Container(
             width: double.infinity,
             color: pad,
             child: i.avatarUrl.isEmpty
-                ? _InitialBig(name: i.name)
+                ? AspectRatio(
+                    aspectRatio: 16 / 7,
+                    child: _InitialBig(name: i.name),
+                  )
                 : CachedNetworkImage(
                     imageUrl: i.avatarUrl,
-                    fit: BoxFit.contain,
                     width: double.infinity,
-                    placeholder: (_, __) => _InitialBig(name: i.name),
-                    errorWidget: (_, __, ___) => _InitialBig(name: i.name),
+                    fit: BoxFit.fitWidth,
+                    placeholder: (_, __) => AspectRatio(
+                      aspectRatio: 16 / 7,
+                      child: _InitialBig(name: i.name),
+                    ),
+                    errorWidget: (_, __, ___) => AspectRatio(
+                      aspectRatio: 16 / 7,
+                      child: _InitialBig(name: i.name),
+                    ),
                   ),
           ),
         ),
