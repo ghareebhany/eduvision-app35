@@ -1,0 +1,11 @@
+# انسخ هذا الملف إلى android/key.properties واملأ قيمك الحقيقية.
+# لإنشاء الـ keystore (مرة واحدة فقط واحتفظ به للأبد):
+#   keytool -genkey -v -keystore ~/eduvision-release.jks \
+#     -keyalg RSA -keysize 2048 -validity 10000 -alias eduvision
+#
+# ملاحظة: لا ترفع key.properties ولا ملف .jks إلى Git.
+
+storePassword=كلمة_مرور_المخزن
+keyPassword=كلمة_مرور_المفتاح
+keyAlias=eduvision
+storeFile=/المسار/الكامل/إلى/eduvision-release.jks

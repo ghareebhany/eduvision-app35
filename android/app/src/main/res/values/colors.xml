@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- خلفية شاشة البداية — كحلي عميق مطابق لـ Splash داخل التطبيق -->
+    <color name="splash_background">#052046</color>
+</resources>

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Splash screen background shown before Flutter renders.
+     خلفية كحلية (#001130) + شعار EduVision الصحيح في المنتصف
+     (يظهر على أندرويد < 12) — لمنع الوميض الأبيض عند الفتح. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@color/splash_background" />
+    <item>
+        <bitmap
+            android:gravity="center"
+            android:src="@drawable/splash_logo" />
+    </item>
+</layer-list>
