@@ -391,7 +391,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                               fontSize: 14,
                               color: Colors.white.withValues(alpha: 0.45)),
                           children: [
-                            const TextSpan(text: 'ل��س لديك حساب؟  '),
+                            const TextSpan(text: 'ليس لديك حساب؟  '),
                             WidgetSpan(
                               child: GestureDetector(
                                 onTap: () => context.push('/register'),
